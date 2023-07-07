@@ -32,6 +32,7 @@ app.run(host='0.0.0.0', port=81)
 ## Pending Tasks
 
 - Uses runes as tokens for repeat calls
+- Add ability to use commando
 
 
 ## Authors

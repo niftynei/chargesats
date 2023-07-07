@@ -21,6 +21,7 @@ class Charger:
     def init_rpc(self, rpc_socket):
       self.rpc = LightningRpc(rpc_socket)
 
+    @classmethod
     def _verify_preimage(self, preimage):
       preimage_hash = sha256(bytes.fromhex(preimage)).hexdigest()
       found = False
@@ -48,7 +49,7 @@ class Charger:
                         if len(parts) == 2 and (parts[0] == "L402" or parts[0] == "l402"):
                                 rune, preimage = parts[1].split(':', maxsplit=1)
                                 print(rune, preimage)
-                                if self.verify_preimage(preimage):
+                                if self._verify_preimage(preimage):
                                         return func(*args, **kwargs) 
               
                   rando_label = randomword(15)
