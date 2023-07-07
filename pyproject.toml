@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ChargeSats"
-version = "0.1.0"
+version = "0.1.1"
 description = "A decorator library for Flask endpoints, to create CLN invoices"
 authors = ["niftynei <niftynei@gmail.com>"]
 readme = "README.md"
