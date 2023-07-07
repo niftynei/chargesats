@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 # Init the charger!
 lnrpc = '/home/runner/.lightning/regtest/lightning-rpc'
-Charger.init_rpc(lnrpc)
+Charger.init(lnrpc, 'secret do not share')
 
 
 @app.route('/')

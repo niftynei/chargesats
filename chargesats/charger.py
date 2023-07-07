@@ -1,4 +1,4 @@
-import random, string, functools
+import random, string, functools, hmac
 
 from hashlib import sha256
 from pyln.client import LightningRpc
@@ -12,27 +12,44 @@ def randomword(length):
 
 class Charger:
     rpc = None
-    invoice_hashes = [] 
+    hmac_list = []
+    secret = ''.encode()
   
     def __init__(self):
       pass
       
     @classmethod
-    def init_rpc(self, rpc_socket):
+    def init(self, rpc_socket, secret):
       self.rpc = LightningRpc(rpc_socket)
+      self.secret = secret.encode()
 
     @classmethod
-    def _verify_preimage(self, preimage):
+    def _make_hmac(self, payment_hash, method, path, data):
+      mac = hmac.new(self.secret, digestmod=sha256)
+      mac.update(payment_hash.encode())
+      mac.update(method.encode())
+      mac.update(path.encode())
+      mac.update(data.encode())
+      return mac.hexdigest()
+
+    @classmethod
+    def _verify_hmac(self, hmac, preimage, method, path, data):
       preimage_hash = sha256(bytes.fromhex(preimage)).hexdigest()
+
+      exp_hmac = self._make_hmac(preimage_hash, method, path, data)
+      return exp_hmac == hmac
+
+    @classmethod
+    def _check_usage(self, hmac):
       found = False
-      for hash in self.invoice_hashes:
-              found = (hash == preimage_hash)
+      for mac in self.hmac_list:
+              found = (hmac == mac)
               if found:
                     break
                 
       # pay-per-view means you pay every time.
       if found:
-              self.invoice_hashes.remove(preimage_hash)
+              self.hmac_list.remove(hmac)
               
       return found
 
@@ -47,18 +64,19 @@ class Charger:
                   else:
                         parts = request.headers["Authorization"].split()
                         if len(parts) == 2 and (parts[0] == "L402" or parts[0] == "l402"):
-                                rune, preimage = parts[1].split(':', maxsplit=1)
-                                print(rune, preimage)
-                                if self._verify_preimage(preimage):
+                                hmac, preimage = parts[1].split(':', maxsplit=1)
+                                if self._verify_hmac(hmac, preimage, request.method, request.path, '') and self._check_usage(hmac):
                                         return func(*args, **kwargs) 
               
                   rando_label = randomword(15)
                   invoice = self.rpc.invoice(amount_msat=amount, label="{}".format(rando_label), description="Payment for {} {}".format(request.method, request.path))
                   bolt11 = invoice['bolt11'] 
-                  self.invoice_hashes.append(invoice['payment_hash'])
+
+                  hmac = self._make_hmac(invoice['payment_hash'], request.method, request.path, '')
+                  self.hmac_list.append(hmac)
                                   
                   resp = Response("Needs payment ({}): {}".format(amount, bolt11), status=402)
-                  resp.headers["WWW-Authenticate"] = 'L402 token="", invoice="{}"'.format(bolt11)
+                  resp.headers["WWW-Authenticate"] = 'L402 token="{}", invoice="{}"'.format(hmac, bolt11)
                   return resp
             return wrapper
         return _decorator(f_py) if callable(f_py) else _decorator
