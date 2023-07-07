@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "ChargeSats"
+version = "0.1.0"
+description = "A decorator library for Flask endpoints, to create CLN invoices"
+authors = ["niftynei <niftynei@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pyln-client = "^23.5.2"
+flask = "^2.3.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
